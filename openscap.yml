@@ -1,0 +1,28 @@
+- hosts: all	
+  vars:
+  - scap_security_path : ~/scap-security-guide-0.1.50
+  - profile : xccdf_org.ssgproject.content_profile_standard
+  - profile_rule_file : ssg-ubuntu1804-ds-1.2.xml
+
+  tasks:
+  - name : install openscap in remote hosts
+    apt :
+     name : "{{ item }}"
+     state : latest
+    with_items :
+    - libopenscap8
+  - name: copy scap security rule file
+    copy: 
+      src: "{{ scap_security_path }}/{{ profile_rule_file }}"
+      dest: ~/
+
+  - block:
+    - name: run openscap scan
+      command: oscap xccdf eval --profile {{ profile }} --report ~/scap_report.html {{ profile_rule_file }}
+    always:
+    - name: fetch scap scan report
+      fetch:
+        src: ~/scap_report.html
+        dest: ~/{{ ansible_host }}.html
+        flat: yes    
+
